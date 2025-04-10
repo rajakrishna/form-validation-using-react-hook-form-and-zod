@@ -5,9 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const checkUsernameAvailability = async (username: string): Promise<boolean> => {
   await new Promise(resolve => setTimeout(resolve, 1000));
-  
   const takenUsernames = ['admin', 'user', 'test', 'moderator', 'system'];
-  return !takenUsernames.includes(username.toLowerCase());
+  const isAvailable = !takenUsernames.includes(username.toLowerCase());
+  return isAvailable;
 };
 
 const asyncSchema = z.object({
@@ -27,48 +27,19 @@ type AsyncFormData = z.infer<typeof asyncSchema>;
 
 export default function AsyncValidation() {
   const [formData, setFormData] = useState<AsyncFormData | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
-  
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError,
-    clearErrors,
-    getValues,
     reset
   } = useForm<AsyncFormData>({
     resolver: zodResolver(asyncSchema),
   });
 
-  const handleUsernameBlur = async () => {
-    const username = getValues("username");
-    
-    if (username && username.length >= 3) {
-      setIsChecking(true);
-      try {
-        const isAvailable = await checkUsernameAvailability(username);
-        if (!isAvailable) {
-          setError("username", { 
-            type: "manual", 
-            message: "This username is already taken" 
-          });
-        } else {
-          clearErrors("username");
-        }
-      } catch (error: unknown) {
-        setError("username", { 
-          type: "manual", 
-          message: "Error checking username availability" 
-        });
-        console.error('Error checking username availability:', error);
-      } finally {
-        setIsChecking(false);
-      }
-    }
-  };
 
   const onSubmit = async (data: AsyncFormData) => {
+    console.log('Submitting form with data:', data);
     setFormData(data);
     console.log('Form submitted successfully:', data);
     reset();
@@ -89,11 +60,9 @@ export default function AsyncValidation() {
               id="username"
               type="text"
               {...register('username')}
-              onBlur={handleUsernameBlur}
             />
-            {isChecking && <span className="status-indicator checking">Checking...</span>}
+            {errors.username && <p className="error-message">{errors.username.message}</p>}
           </div>
-          {errors.username && <p className="error-message">{errors.username.message}</p>}
           <p className="hint">Try: 'admin', 'user', 'test', 'moderator', 'system' (these are taken)</p>
         </div>
         
@@ -101,7 +70,6 @@ export default function AsyncValidation() {
           <label htmlFor="email">Email:</label>
           <input
             id="email"
-            type="email"
             {...register('email')}
           />
           {errors.email && <p className="error-message">{errors.email.message}</p>}
